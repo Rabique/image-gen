@@ -4,9 +4,20 @@ import { SparklesCore } from "@/components/ui/sparkles";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
   const supabase = createClient();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, loading, router]);
 
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({

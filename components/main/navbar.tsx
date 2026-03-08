@@ -2,8 +2,11 @@
 import React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 export function Navbar() {
+  const { user, signOut } = useAuth();
+
   return (
     <nav className="fixed top-0 inset-x-0 z-[100] border-b border-white/10 bg-black/50 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -36,12 +39,33 @@ export function Navbar() {
         </div>
 
         {/* Right Action */}
-        <div>
-          <Link href="/auth">
-            <button className="px-5 py-2 rounded-full bg-white text-black text-sm font-bold hover:bg-neutral-200 transition-colors">
-              Get Started
-            </button>
-          </Link>
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              <Link href="/dashboard" className="text-neutral-400 hover:text-white transition-colors text-sm font-medium">
+                Dashboard
+              </Link>
+              <button
+                onClick={() => signOut()}
+                className="px-5 py-2 rounded-full border border-white/10 text-white text-sm font-bold hover:bg-white/5 transition-colors"
+              >
+                Sign Out
+              </button>
+              {user.user_metadata.avatar_url && (
+                <img
+                  src={user.user_metadata.avatar_url}
+                  alt="User Avatar"
+                  className="w-8 h-8 rounded-full border border-white/20"
+                />
+              )}
+            </>
+          ) : (
+            <Link href="/auth">
+              <button className="px-5 py-2 rounded-full bg-white text-black text-sm font-bold hover:bg-neutral-200 transition-colors">
+                Get Started
+              </button>
+            </Link>
+          )}
         </div>
       </div>
     </nav>
