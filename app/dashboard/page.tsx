@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { DashboardNavbar } from "@/components/dashboard/dashboard-navbar";
-import { PromptArea } from "@/components/Tjaspdashboard/prompt-area";
+import { PromptArea } from "@/components/dashboard/prompt-area";
 import { SparklesCore } from "@/components/ui/sparkles";
 
 export default function DashboardPage() {
