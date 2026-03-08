@@ -2,6 +2,7 @@
 import React from "react";
 import { SparklesCore } from "../ui/sparkles";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 export function Hero() {
   return (
@@ -46,9 +47,11 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="mt-10"
         >
-          <button className="px-8 py-3 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold transition-all duration-200 transform hover:scale-105 shadow-[0_0_20px_rgba(220,38,38,0.5)]">
-            Create Your First Thumbnail
-          </button>
+          <Link href="/auth">
+            <button className="px-8 py-3 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold transition-all duration-200 transform hover:scale-105 shadow-[0_0_20px_rgba(220,38,38,0.5)]">
+              Create Your First Thumbnail
+            </button>
+          </Link>
         </motion.div>
       </div>
 

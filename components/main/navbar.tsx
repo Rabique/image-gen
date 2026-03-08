@@ -37,9 +37,11 @@ export function Navbar() {
 
         {/* Right Action */}
         <div>
-          <button className="px-5 py-2 rounded-full bg-white text-black text-sm font-bold hover:bg-neutral-200 transition-colors">
-            Get Started
-          </button>
+          <Link href="/auth">
+            <button className="px-5 py-2 rounded-full bg-white text-black text-sm font-bold hover:bg-neutral-200 transition-colors">
+              Get Started
+            </button>
+          </Link>
         </div>
       </div>
     </nav>
