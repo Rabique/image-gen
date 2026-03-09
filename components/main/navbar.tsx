@@ -1,11 +1,14 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const { user, signOut } = useAuth();
+  const pathname = usePathname();
+
+  if (pathname === "/dashboard") return null;
 
   return (
     <nav className="fixed top-0 inset-x-0 z-[100] border-b border-white/10 bg-black/50 backdrop-blur-md">

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { BorderBeam } from "@/components/ui/border-beam";
 
 interface PromptAreaProps {
   onImageGenerated?: (imageData: string, mimeType: string, imageUrl?: string) => void;
@@ -57,74 +58,77 @@ export function PromptArea({ onImageGenerated, onLoading }: PromptAreaProps) {
         className="relative"
       >
         <form onSubmit={handleSubmit} className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-lime-600 rounded-[1.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-          <div className="relative flex flex-col p-1.5 rounded-[1.2rem] bg-neutral-900/90 border border-white/10 backdrop-blur-3xl shadow-2xl">
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe your video idea..."
-              disabled={isGenerating}
-              className="w-full h-10 md:h-12 p-3 bg-transparent text-white text-sm md:text-base placeholder:text-neutral-600 focus:outline-none resize-none disabled:opacity-50"
-            />
+          <div className="relative flex flex-col p-1.5 rounded-[1.2rem] bg-neutral-900/90 border border-white/10 backdrop-blur-3xl shadow-2xl overflow-hidden">
+            <BorderBeam duration={12} size={300} />
 
-            {error && (
-              <div className="px-8 py-2 text-red-500 text-sm">
-                Error: {error}
-              </div>
-            )}
+            <div className="relative z-20 flex flex-col">
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe your video idea..."
+                disabled={isGenerating}
+                className="w-full h-20 md:h-24 p-6 bg-transparent text-white text-sm md:text-base placeholder:text-neutral-600 focus:outline-none resize-none disabled:opacity-50"
+              />
 
-            <div className="flex items-center justify-between p-4 pt-0">
-              <div className="flex gap-4 px-4">
-                <button type="button" className="text-neutral-500 hover:text-white transition-colors" disabled={isGenerating}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
+              {error && (
+                <div className="px-8 py-2 text-red-500 text-sm">
+                  Error: {error}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between p-4 pt-4 border-t border-white/5">
+                <div className="flex gap-4 px-2">
+                  <button type="button" className="text-neutral-500 hover:text-white transition-colors p-2" disabled={isGenerating}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </button>
+                  <button type="button" className="text-neutral-500 hover:text-white transition-colors p-2" disabled={isGenerating}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="22" />
+                    </svg>
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!prompt.trim() || isGenerating}
+                  className="group relative flex items-center justify-center gap-3 px-8 py-3 rounded-2xl bg-sky-500 hover:bg-sky-600 disabled:bg-neutral-800 disabled:text-neutral-600 text-white font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-sky-500/20 min-w-[140px]"
+                >
+                  <AnimatePresence mode="wait">
+                    {isGenerating ? (
+                      <motion.div
+                        key="loading"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span className="text-sm">Thinking...</span>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="idle"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="flex items-center gap-2"
+                      >
+                        <span className="text-sm">Generate</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:translate-x-1 transition-transform">
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                          <polyline points="12 5 19 12 12 19" />
+                        </svg>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </button>
-                <button type="button" className="text-neutral-500 hover:text-white transition-colors" disabled={isGenerating}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                    <line x1="12" y1="19" x2="12" y2="22" />
-                  </svg>
-                </button>
               </div>
-
-              <button
-                type="submit"
-                disabled={!prompt.trim() || isGenerating}
-                className="group relative flex items-center justify-center gap-3 px-8 py-4 rounded-3xl bg-blue-500 hover:bg-blue-600 disabled:bg-neutral-800 disabled:text-neutral-600 text-white font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-blue-500/20 min-w-[140px]"
-              >
-                <AnimatePresence mode="wait">
-                  {isGenerating ? (
-                    <motion.div
-                      key="loading"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="flex items-center gap-2"
-                    >
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Thinking...</span>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="idle"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="flex items-center gap-2"
-                    >
-                      <span>Generate</span>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 group-hover:translate-x-1 transition-transform">
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                        <polyline points="12 5 19 12 12 19" />
-                      </svg>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </button>
             </div>
           </div>
         </form>

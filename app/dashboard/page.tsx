@@ -3,6 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DashboardNavbar } from "@/components/dashboard/dashboard-navbar";
 import { PromptArea } from "@/components/dashboard/prompt-area";
 import { SidebarGallery } from "@/components/dashboard/sidebar-gallery";
 import { ImageResult } from "@/components/dashboard/image-result";
@@ -49,6 +50,8 @@ export default function DashboardPage() {
 
             {/* Sidebar Gallery - Now floating fixed */}
             <SidebarGallery userId={user.id} />
+
+            <DashboardNavbar />
 
             {/* Main Content Area - Full width */}
             <div className="h-full w-full relative overflow-y-auto custom-scrollbar flex flex-col items-center">
