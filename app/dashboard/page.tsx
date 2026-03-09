@@ -3,6 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DashboardNavbar } from "@/components/dashboard/dashboard-navbar";
 import { PromptArea } from "@/components/dashboard/prompt-area";
 import { SidebarGallery } from "@/components/dashboard/sidebar-gallery";
 import { ImageResult } from "@/components/dashboard/image-result";
@@ -52,7 +53,9 @@ export default function DashboardPage() {
 
             {/* Main Content Area - Full width */}
             <div className="h-full w-full relative overflow-y-auto custom-scrollbar flex flex-col items-center">
-                <main className="relative z-10 w-full pt-20 pb-20 flex flex-col items-center">
+                <DashboardNavbar />
+
+                <main className="relative z-10 w-full pt-10 pb-20 flex flex-col items-center">
                     <div className="w-full max-w-4xl px-8 flex flex-col items-center lg:pl-32">
                         <div className="mb-8 text-center mt-12">
                             <motion.h1
