@@ -23,6 +23,40 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
         },
     ];
 
+    const [loadingPlan, setLoadingPlan] = React.useState<string | null>(null);
+
+    const handleCheckout = async (planName: string) => {
+        try {
+            setLoadingPlan(planName);
+            const response = await fetch("/api/checkout", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ planName }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Checkout failed:", errorData);
+                alert("Checkout failed. Please try again.");
+                return;
+            }
+
+            const data = await response.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert("Failed to create checkout session.");
+            }
+        } catch (error) {
+            console.error("Error during checkout:", error);
+            alert("An error occurred. Please try again.");
+        } finally {
+            setLoadingPlan(null);
+        }
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <div className="relative p-1 rounded-[2.5rem] bg-neutral-900/90 backdrop-blur-3xl border border-white/10 shadow-2xl overflow-hidden">
@@ -38,7 +72,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
                         {plans.map((plan) => (
                             <div
                                 key={plan.name}
-                                className="p-4 rounded-[1.5rem] bg-neutral-950/50 border border-white/5 flex flex-col items-center justify-center text-center space-y-2"
+                                className="p-4 rounded-[1.5rem] bg-neutral-950/50 border border-white/5 flex flex-col items-center justify-center text-center space-y-2 relative group"
                             >
                                 <span className="text-neutral-500 text-[10px] font-bold uppercase tracking-[0.2em]">
                                     {plan.name}
@@ -47,9 +81,16 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
                                     <span className="text-2xl font-bold text-white">${plan.price}</span>
                                     <span className="text-neutral-500 text-[10px]">/mo</span>
                                 </div>
-                                <div className="text-emerald-400 font-bold text-sm">
+                                <div className="text-emerald-400 font-bold text-sm mb-2">
                                     {plan.credits} Credits
                                 </div>
+                                <button
+                                    onClick={() => handleCheckout(plan.name)}
+                                    disabled={loadingPlan !== null}
+                                    className="mt-2 w-full px-4 py-2 rounded-full bg-white text-black text-xs font-bold hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loadingPlan === plan.name ? "Redirecting..." : "Get Started"}
+                                </button>
                             </div>
                         ))}
                     </div>

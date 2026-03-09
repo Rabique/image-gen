@@ -79,7 +79,7 @@ export function DashboardNavbar() {
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                       </svg>
                     </div>
-                    <span className="text-sm font-bold">Pricing</span>
+                    <span className="text-sm font-bold">Update</span>
                   </button>
 
                   <button
