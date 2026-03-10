@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       if (order.product_id === PRO_PRODUCT_ID) incomingPlan = "PRO";
       else if (order.product_id === ULTRA_PRODUCT_ID) incomingPlan = "ULTRA";
 
-      // Fetch current user to check for upgrade logic
+      // Fetch current user to determine credit logic
       const { data: userProfile } = await supabase
         .from("users")
         .select("plan, credits")
@@ -59,15 +59,15 @@ export async function POST(req: Request) {
       if (incomingPlan === "PRO") {
         creditsToAdd = 100;
       } else if (incomingPlan === "ULTRA") {
-        // Upgrade check: If user was PRO and is now paying for ULTRA
+        // Rule 3: Upgrade difference (Pro to Ultra)
         if (userProfile?.plan === "PRO") {
-          creditsToAdd = 200; // Requirement 3: Upgrade difference
+          creditsToAdd = 200;
         } else {
-          creditsToAdd = 300; // First time or renewal
+          creditsToAdd = 300;
         }
       }
 
-      console.log(`User ${userId} paid for ${incomingPlan}. Adding ${creditsToAdd} credits.`);
+      console.log(`Order Paid: User ${userId} paid for ${incomingPlan}. Adding ${creditsToAdd} credits.`);
 
       // Update User
       await supabase
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
         })
         .eq("id", userId);
 
-      // Log payment
+      // Log payment (Rule 1)
       await supabase
         .from("payments")
         .insert({
@@ -92,8 +92,15 @@ export async function POST(req: Request) {
         });
     }
 
-    // 2. Handle Subscription Events (Status & Plan Sync)
-    const subEvents = ["subscription.created", "subscription.updated", "subscription.active", "subscription.revoked", "subscription.canceled"];
+    // 2. Handle Subscription Events (Rule 2: Status & Plan Sync)
+    const subEvents = [
+      "subscription.created", 
+      "subscription.updated", 
+      "subscription.active", 
+      "subscription.revoked", 
+      "subscription.canceled"
+    ];
+
     if (subEvents.includes(webhookPayload.type)) {
       const sub = webhookPayload.data as any;
       const metadata = (sub.metadata || {}) as Record<string, string>;
@@ -101,25 +108,13 @@ export async function POST(req: Request) {
 
       if (userId) {
         let incomingPlan = "FREE";
+        // Only set plan to PRO/ULTRA if subscription is active or trialing
         if (sub.status === "active" || sub.status === "trialing") {
           if (sub.product_id === PRO_PRODUCT_ID) incomingPlan = "PRO";
           else if (sub.product_id === ULTRA_PRODUCT_ID) incomingPlan = "ULTRA";
         }
 
-        const { data: userProfile } = await supabase
-          .from("users")
-          .select("plan, credits")
-          .eq("id", userId)
-          .single();
-
-        let creditsToAdd = 0;
-        // Upgrade Logic in subscription.updated:
-        if (webhookPayload.type === "subscription.updated") {
-          if (userProfile?.plan === "PRO" && incomingPlan === "ULTRA") {
-            creditsToAdd = 200;
-            console.log(`Upgrade detected for ${userId} from PRO to ULTRA. Adding 200 credits.`);
-          }
-        }
+        console.log(`Subscription Event (${webhookPayload.type}): User ${userId} plan set to ${incomingPlan} (status: ${sub.status})`);
 
         await supabase
           .from("users")
@@ -127,7 +122,6 @@ export async function POST(req: Request) {
             plan: incomingPlan,
             subscription_status: sub.status,
             polar_customer_id: sub.customer_id,
-            credits: (userProfile?.credits || 0) + creditsToAdd,
           })
           .eq("id", userId);
       }

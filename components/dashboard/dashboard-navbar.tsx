@@ -123,7 +123,7 @@ export function DashboardNavbar() {
                           </svg>
                         )}
                       </div>
-                      <span className="text-sm font-bold">Billing</span>
+                      <span className="text-sm font-bold">Manage Subscription</span>
                     </button>
                   )}
 
