@@ -154,7 +154,45 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Handle Revoked/Canceled/Expired
+    // 3. Handle Customer State Changed (Comprehensive Sync)
+    if (webhookPayload.type === "customer.state_changed") {
+      const customer = webhookPayload.data as any;
+      const activeSubscriptions = customer.active_subscriptions || [];
+      
+      // Find the best plan among active subscriptions
+      let bestPlan = "FREE";
+      let customerId = customer.id;
+      let userIdFromMetadata = null;
+
+      for (const sub of activeSubscriptions) {
+        if (sub.status !== "active") continue;
+        
+        const metadata = (sub.metadata || {}) as Record<string, string>;
+        if (metadata.userId) userIdFromMetadata = metadata.userId;
+
+        if (sub.product_id === ULTRA_PRODUCT_ID) {
+          bestPlan = "ULTRA";
+          break; // Ultra is highest
+        }
+        if (sub.product_id === PRO_PRODUCT_ID) {
+          bestPlan = "PRO";
+        }
+      }
+
+      if (userIdFromMetadata) {
+        console.log(`Syncing customer ${customerId} state. Best plan: ${bestPlan}`);
+        await supabase
+          .from("users")
+          .update({
+            plan: bestPlan,
+            subscription_status: bestPlan !== "FREE" ? "active" : "inactive",
+            polar_customer_id: customerId,
+          })
+          .eq("id", userIdFromMetadata);
+      }
+    }
+
+    // 4. Handle Revoked/Canceled/Expired
     if (
       webhookPayload.type === "subscription.revoked" ||
       webhookPayload.type === "subscription.canceled"
@@ -174,9 +212,6 @@ export async function POST(req: Request) {
           })
           .eq("id", userId);
       }
-      
-      // Note: canceled usually means it will not renew at the end of the period.
-      // We keep the plan active until it is actually revoked or expires.
     }
 
     return NextResponse.json({ received: true });
