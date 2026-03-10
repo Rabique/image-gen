@@ -114,14 +114,14 @@ export async function POST(req: Request) {
           else if (sub.product_id === ULTRA_PRODUCT_ID) incomingPlan = "ULTRA";
         }
 
-        console.log(`Subscription Event (${webhookPayload.type}): User ${userId} plan set to ${incomingPlan} (status: ${sub.status})`);
+        console.log(`Subscription Event (${webhookPayload.type}): User ${userId} plan set to ${incomingPlan} (status: ${sub.status}, customerId: ${sub.customer_id})`);
 
         await supabase
           .from("users")
           .update({
             plan: incomingPlan,
             subscription_status: sub.status,
-            polar_customer_id: sub.customer_id,
+            polar_customer_id: sub.customer_id, // Ensure this is always updated
           })
           .eq("id", userId);
       }
