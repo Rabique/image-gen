@@ -4,13 +4,21 @@ import { SparklesCore } from "../ui/sparkles";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export function Hero() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  const handleButtonClick = () => {
+    if (loading) return;
+    const targetPath = user ? "/dashboard" : "/auth";
+    router.push(targetPath);
+  };
 
   return (
     <div className="h-screen relative w-full bg-black flex flex-col items-center justify-center overflow-hidden">
-      <div className="w-full absolute inset-0 h-screen">
+      <div className="w-full absolute inset-0 h-screen pointer-events-none">
         <SparklesCore
           id="tsparticlesfullpage"
           background="transparent"
@@ -22,7 +30,7 @@ export function Hero() {
         />
       </div>
 
-      <div className="relative z-20 flex flex-col items-center">
+      <div className="relative z-[50] flex flex-col items-center">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -50,11 +58,13 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="mt-10"
         >
-          <Link href={user ? "/dashboard" : "/auth"}>
-            <button className="px-8 py-3 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold transition-all duration-200 transform hover:scale-105 shadow-[0_0_20px_rgba(220,38,38,0.5)]">
-              {user ? "Go to Dashboard" : "Create Your First Thumbnail"}
-            </button>
-          </Link>
+          <button 
+            onClick={handleButtonClick}
+            disabled={loading}
+            className="px-8 py-3 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold transition-all duration-200 transform hover:scale-105 shadow-[0_0_20px_rgba(220,38,38,0.5)] cursor-pointer relative z-[60] disabled:opacity-50"
+          >
+            {user ? "Go to Dashboard" : "Create Your First Thumbnail"}
+          </button>
         </motion.div>
       </div>
 

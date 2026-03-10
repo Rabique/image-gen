@@ -2,19 +2,25 @@
 import React from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export function Navbar() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
 
   if (pathname === "/dashboard") return null;
+
+  const handleDashboardClick = () => {
+    if (loading) return;
+    router.push("/dashboard");
+  };
 
   return (
     <nav className="fixed top-0 inset-x-0 z-[100] border-b border-white/10 bg-black/50 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-2 group pointer-events-auto">
           <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center group-hover:rotate-12 transition-transform">
             <svg
               viewBox="0 0 24 24"
@@ -45,9 +51,13 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <Link href="/dashboard" className="text-neutral-400 hover:text-white transition-colors text-sm font-medium">
+              <button 
+                onClick={handleDashboardClick}
+                disabled={loading}
+                className="text-neutral-400 hover:text-white transition-colors text-sm font-medium disabled:opacity-50"
+              >
                 Dashboard
-              </Link>
+              </button>
               <button
                 onClick={() => signOut()}
                 className="px-5 py-2 rounded-full border border-white/10 text-white text-sm font-bold hover:bg-white/5 transition-colors"
@@ -74,3 +84,4 @@ export function Navbar() {
     </nav>
   );
 }
+
