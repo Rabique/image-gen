@@ -27,34 +27,35 @@ export default function DashboardPage() {
 }
 
 function DashboardContent() {
-    const { user, loading, refreshUser } = useAuth();
+    const { user, loading, refreshUser, userProfile } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const [isMounted, setIsMounted] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; imageUrl?: string } | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
-
     const [showSuccess, setShowSuccess] = useState(false);
 
     useEffect(() => {
-        if (!loading && !user) {
-            router.push("/auth");
-        }
-    }, [user, loading, router]);
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
-        if (searchParams.get("checkout_success") === "true") {
+        if (isMounted && !loading && !user) {
+            router.replace("/auth");
+        }
+    }, [user, loading, router, isMounted]);
+
+    useEffect(() => {
+        if (isMounted && searchParams.get("checkout_success") === "true") {
             setShowSuccess(true);
             refreshUser();
             
-            // Webhooks might take a second, so refresh again after 2 seconds
             const timer = setTimeout(() => {
                 refreshUser();
             }, 2000);
 
-            // Remove the query parameter without refreshing the page
             window.history.replaceState({}, "", window.location.pathname);
 
-            // Hide success message after 5 seconds
             const hideTimer = setTimeout(() => {
                 setShowSuccess(false);
             }, 5000);
@@ -64,12 +65,12 @@ function DashboardContent() {
                 clearTimeout(hideTimer);
             };
         }
-    }, [searchParams, refreshUser]);
+    }, [searchParams, refreshUser, isMounted]);
 
-    if (loading) {
+    if (!isMounted || loading) {
         return (
             <div className="h-screen w-full bg-black flex items-center justify-center">
-                <div className="text-white text-xl animate-pulse">Loading...</div>
+                <div className="text-white text-xl animate-pulse font-medium tracking-widest uppercase">Loading ViralAI...</div>
             </div>
         );
     }

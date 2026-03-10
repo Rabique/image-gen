@@ -56,12 +56,12 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-10"
+          className="mt-10 relative z-[9999] pointer-events-auto"
         >
           <button 
             onClick={handleButtonClick}
             disabled={loading}
-            className="px-8 py-3 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold transition-all duration-200 transform hover:scale-105 shadow-[0_0_20px_rgba(220,38,38,0.5)] cursor-pointer relative z-[60] disabled:opacity-50"
+            className="px-8 py-3 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold transition-all duration-200 transform hover:scale-105 shadow-[0_0_20px_rgba(220,38,38,0.5)] cursor-pointer disabled:opacity-50 active:scale-95"
           >
             {user ? "Go to Dashboard" : "Create Your First Thumbnail"}
           </button>
