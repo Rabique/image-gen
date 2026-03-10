@@ -1,7 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function updateSession(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Webhook 경로는 인증 로직을 완전히 건너뜁니다.
+  if (pathname.startsWith("/api/webhook")) {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -23,42 +30,6 @@ export async function updateSession(request: NextRequest) {
           });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  // IMPORTANT: Do not remove this. It's needed for Auth to work.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  return supabaseResponse;
-}
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Webhook 경로는 인증 로직을 완전히 건너뜁니다.
-  if (pathname.startsWith("/api/webhook")) {
-    return NextResponse.next();
-  }
-
-  const supabaseResponse = await updateSession(request);
-
-  // 세션 정보를 다시 가져옵니다. (updateSession에서 처리된 후의 응답 쿠키 기반)
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
           );
         },
       },
