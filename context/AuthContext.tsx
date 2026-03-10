@@ -9,6 +9,9 @@ type UserProfile = {
   full_name: string | null;
   avatar_url: string | null;
   email: string | null;
+  plan: string;
+  subscription_status: string;
+  credits: number;
 };
 
 type AuthContextType = {

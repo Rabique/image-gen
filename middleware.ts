@@ -38,18 +38,24 @@ export async function updateSession(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Webhook 경로는 인증 로직을 완전히 건너뜁니다.
+  if (pathname.startsWith("/api/webhook")) {
+    return NextResponse.next();
+  }
+
   return await updateSession(request);
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * 아래 경로들을 제외한 모든 경로에서 미들웨어 실행:
+     * - _next/static, _next/image, favicon.ico
+     * - api/webhook (웹훅 경로 명시적 제외)
+     * - 정적 파일들
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

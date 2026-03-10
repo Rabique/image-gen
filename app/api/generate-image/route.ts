@@ -22,6 +22,33 @@ export async function POST(req: Request) {
       );
     }
 
+    // Initialize Supabase Client
+    const supabase = await createClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Check credits
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("credits")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    if (profile.credits <= 0) {
+      return NextResponse.json({ error: "Insufficient credits. Please upgrade your plan." }, { status: 403 });
+    }
+
     // Use the gemini-3-pro-image-preview model (nanobanana)
     const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
 
@@ -44,23 +71,22 @@ export async function POST(req: Request) {
     const mimeType = imagePart.inlineData.mimeType;
     const buffer = Buffer.from(base64Data, 'base64');
 
-    // Initialize Supabase Client
-    const supabase = await createClient();
+    // Deduct 1 credit
+    const { error: deductError } = await supabase
+      .from("users")
+      .update({ credits: profile.credits - 1 })
+      .eq("id", user.id);
 
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    if (deductError) {
+      console.error("Credit deduction error:", deductError);
+      // We continue anyway as the image was already generated, but log it
     }
 
     // Generate a unique filename
     const filename = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
 
     // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase
+    const { error: uploadError } = await supabase
       .storage
       .from('thumbnails')
       .upload(filename, buffer, {
@@ -104,10 +130,10 @@ export async function POST(req: Request) {
       id: dbData?.id
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Image generation error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to generate image" },
+      { error: error instanceof Error ? error.message : "Failed to generate image" },
       { status: 500 }
     );
   }

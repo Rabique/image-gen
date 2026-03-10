@@ -7,9 +7,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PricingModal } from "@/components/ui/pricing-modal";
 
 export function DashboardNavbar() {
-  const { user, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
   const [isPricingOpen, setIsPricingOpen] = React.useState(false);
+  const [isPortalLoading, setIsPortalLoading] = React.useState(false);
+
+  const handleManageSubscription = async () => {
+    try {
+      setIsPortalLoading(true);
+      const response = await fetch("/api/portal", { method: "POST" });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("Failed to get portal URL:", data.error);
+        alert("Failed to open billing portal. Please try again later.");
+      }
+    } catch (error) {
+      console.error("Error opening portal:", error);
+    } finally {
+      setIsPortalLoading(false);
+    }
+  };
 
   return (
     <>
@@ -48,7 +67,9 @@ export function DashboardNavbar() {
               <span className="text-white text-sm font-semibold truncate max-w-[100px]">
                 {user?.user_metadata.full_name || "Creator"}
               </span>
-              <span className="text-neutral-500 text-[10px] uppercase tracking-wider font-bold">PRO</span>
+              <span className="text-neutral-500 text-[10px] uppercase tracking-wider font-bold">
+                {userProfile?.plan || "FREE"}
+              </span>
             </div>
           </button>
 
@@ -66,6 +87,11 @@ export function DashboardNavbar() {
                   <p className="text-xs text-white truncate font-medium">{user?.email}</p>
                 </div>
 
+                <div className="px-4 py-3 border-b border-white/5 mb-1 bg-emerald-500/5">
+                  <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-500 mb-1">Credits</p>
+                  <p className="text-sm text-white font-bold">{userProfile?.credits ?? 0}</p>
+                </div>
+
                 <div className="space-y-1">
                   <button
                     onClick={() => {
@@ -81,6 +107,29 @@ export function DashboardNavbar() {
                     </div>
                     <span className="text-sm font-bold">Update</span>
                   </button>
+
+                  {userProfile?.plan !== "FREE" && (
+                    <button
+                      onClick={handleManageSubscription}
+                      disabled={isPortalLoading}
+                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-white/5 text-neutral-400 hover:text-white transition-all group disabled:opacity-50"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center group-hover:bg-purple-500/20 group-hover:text-purple-400 transition-colors">
+                        {isPortalLoading ? (
+                          <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.2" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-start">
+                        <span className="text-xs font-bold leading-tight">Manage</span>
+                        <span className="text-[10px] text-neutral-500 font-medium">Subscription</span>
+                      </div>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => signOut()}

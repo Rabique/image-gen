@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BorderBeam } from "@/components/ui/border-beam";
+import { useAuth } from "@/context/AuthContext";
 
 interface PromptAreaProps {
   onImageGenerated?: (imageData: string, mimeType: string, imageUrl?: string) => void;
@@ -13,6 +14,7 @@ export function PromptArea({ onImageGenerated, onLoading }: PromptAreaProps) {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { userProfile, refreshUser } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +41,7 @@ export function PromptArea({ onImageGenerated, onLoading }: PromptAreaProps) {
 
       if (data.imageData) {
         onImageGenerated?.(data.imageData, data.mimeType, data.imageUrl);
+        await refreshUser();
       }
     } catch (err: any) {
       console.error("Generation error:", err);
@@ -78,25 +81,17 @@ export function PromptArea({ onImageGenerated, onLoading }: PromptAreaProps) {
 
               <div className="flex items-center justify-between p-4 pt-4 border-t border-white/5">
                 <div className="flex gap-4 px-2">
-                  <button type="button" className="text-neutral-500 hover:text-white transition-colors p-2" disabled={isGenerating}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                  </button>
-                  <button type="button" className="text-neutral-500 hover:text-white transition-colors p-2" disabled={isGenerating}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                      <line x1="12" y1="19" x2="12" y2="22" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] md:text-xs text-emerald-500 font-bold uppercase tracking-wider">
+                      {userProfile?.credits ?? 0} Credits Left
+                    </span>
+                  </div>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={!prompt.trim() || isGenerating}
+                  disabled={!prompt.trim() || isGenerating || (userProfile?.credits ?? 0) <= 0}
                   className="group relative flex items-center justify-center gap-3 px-8 py-3 rounded-2xl bg-sky-500 hover:bg-sky-600 disabled:bg-neutral-800 disabled:text-neutral-600 text-white font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-sky-500/20 min-w-[140px]"
                 >
                   <AnimatePresence mode="wait">

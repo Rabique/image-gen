@@ -11,17 +11,60 @@ import { SparklesCore } from "@/components/ui/sparkles";
 import { UniqueLoading } from "@/components/ui/unique-loading";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+
 export default function DashboardPage() {
-    const { user, loading } = useAuth();
+    return (
+        <Suspense fallback={
+            <div className="h-screen w-full bg-black flex items-center justify-center">
+                <div className="text-white text-xl animate-pulse">Loading...</div>
+            </div>
+        }>
+            <DashboardContent />
+        </Suspense>
+    );
+}
+
+function DashboardContent() {
+    const { user, loading, refreshUser } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; imageUrl?: string } | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+
+    const [showSuccess, setShowSuccess] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
             router.push("/auth");
         }
     }, [user, loading, router]);
+
+    useEffect(() => {
+        if (searchParams.get("checkout_success") === "true") {
+            setShowSuccess(true);
+            refreshUser();
+            
+            // Webhooks might take a second, so refresh again after 2 seconds
+            const timer = setTimeout(() => {
+                refreshUser();
+            }, 2000);
+
+            // Remove the query parameter without refreshing the page
+            window.history.replaceState({}, "", window.location.pathname);
+
+            // Hide success message after 5 seconds
+            const hideTimer = setTimeout(() => {
+                setShowSuccess(false);
+            }, 5000);
+
+            return () => {
+                clearTimeout(timer);
+                clearTimeout(hideTimer);
+            };
+        }
+    }, [searchParams, refreshUser]);
 
     if (loading) {
         return (
@@ -35,6 +78,21 @@ export default function DashboardPage() {
 
     return (
         <div className="h-screen w-full bg-black relative overflow-hidden">
+            <AnimatePresence>
+                {showSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -50 }}
+                        className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-emerald-500/10 border border-emerald-500/20 px-6 py-3 rounded-full backdrop-blur-md flex items-center gap-3"
+                    >
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-emerald-400 text-sm font-medium tracking-tight">
+                            Payment successful! Your credits have been updated.
+                        </span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {/* Background Sparkles */}
             <div className="absolute inset-0 w-full h-full pointer-events-none">
                 <SparklesCore

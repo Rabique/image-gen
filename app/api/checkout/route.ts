@@ -1,8 +1,16 @@
 import { Polar } from "@polar-sh/sdk";
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     let body;
     try {
       body = await req.json();
@@ -23,18 +31,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid plan or missing product ID" }, { status: 400 });
     }
 
-    console.log("Product ID selected:", productId);
-
     const polar = new Polar({
       accessToken: process.env.POLAR_ACCESS_TOKEN ?? "",
       server: process.env.POLAR_SANDBOX === "true" ? "sandbox" : "production",
     });
 
-    console.log("Calling polar checkout create with product ID:", productId);
+    const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
     const checkout = await polar.checkouts.create({
-      products: [productId]
+      products: [productId],
+      customerEmail: user.email,
+      metadata: {
+        userId: user.id,
+        planName: planName,
+      },
+      successUrl: `${origin}/dashboard?checkout_success=true`,
     });
-    console.log("Checkout created URL:", checkout.url);
 
     return NextResponse.json({ url: checkout.url });
   } catch (error) {
