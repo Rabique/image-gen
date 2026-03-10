@@ -38,8 +38,13 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error("Checkout failed:", errorData);
-                alert("Checkout failed. Please try again.");
+                
+                if (errorData.error === "ALREADY_SUBSCRIBED") {
+                    alert("You already have an active subscription. You can manage, upgrade, or downgrade your plan in the 'Manage Subscription' section of your profile.");
+                } else {
+                    console.error("Checkout failed:", errorData);
+                    alert("Checkout failed. Please try again.");
+                }
                 return;
             }
 
