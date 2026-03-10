@@ -94,6 +94,6 @@ export const config = {
      * - api/webhook (웹훅 경로 명시적 제외)
      * - 정적 파일들
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|/api/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
