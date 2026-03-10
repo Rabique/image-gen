@@ -78,14 +78,21 @@ function DashboardContent() {
     if (!user) return null;
 
     return (
-        <div className="h-screen w-full bg-black relative overflow-hidden">
+        <div className="h-screen w-full bg-black relative overflow-hidden flex flex-col">
+            {/* New Grid Background */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+            </div>
+
+            <DashboardNavbar />
+            
             <AnimatePresence>
                 {showSuccess && (
                     <motion.div
                         initial={{ opacity: 0, y: -50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -50 }}
-                        className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-emerald-500/10 border border-emerald-500/20 px-6 py-3 rounded-full backdrop-blur-md flex items-center gap-3"
+                        className="fixed top-24 left-1/2 -translate-x-1/2 z-[110] bg-emerald-500/10 border border-emerald-500/20 px-6 py-3 rounded-full backdrop-blur-md flex items-center gap-3"
                     >
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="text-emerald-400 text-sm font-medium tracking-tight">
@@ -94,33 +101,19 @@ function DashboardContent() {
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* Background Sparkles */}
-            <div className="absolute inset-0 w-full h-full pointer-events-none">
-                <SparklesCore
-                    id="dashboard-sparkles"
-                    background="transparent"
-                    minSize={0.4}
-                    maxSize={1.2}
-                    particleDensity={10}
-                    className="w-full h-full"
-                    particleColor="#10b981"
-                />
-            </div>
 
-            {/* Sidebar Gallery - Now floating fixed */}
+            {/* Sidebar Gallery - Floating */}
             <SidebarGallery userId={user.id} />
 
-            <DashboardNavbar />
-
-            {/* Main Content Area - Full width */}
-            <div className="h-full w-full relative overflow-y-auto custom-scrollbar flex flex-col items-center">
-                <main className="relative z-10 w-full pt-20 pb-20 flex flex-col items-center">
+            {/* Main Content Area */}
+            <div className="flex-1 relative overflow-y-auto custom-scrollbar">
+                <main className="relative z-10 w-full pt-32 pb-20 flex flex-col items-center">
                     <div className="w-full max-w-4xl px-8 flex flex-col items-center lg:pl-32">
-                        <div className="mb-8 text-center mt-12">
+                        <div className="mb-12 text-center">
                             <motion.h1
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="text-xl md:text-3xl font-bold text-white mb-2 tracking-tight"
+                                className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tighter"
                             >
                                 What are we creating today?
                             </motion.h1>
@@ -128,13 +121,13 @@ function DashboardContent() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.2 }}
-                                className="text-neutral-500 text-xs md:text-sm uppercase tracking-[0.2em]"
+                                className="text-neutral-500 text-sm md:text-base uppercase tracking-[0.3em] font-medium"
                             >
-                                Generate premium thumbnails in seconds.
+                                Premium AI Thumbnails in Seconds
                             </motion.p>
                         </div>
 
-                        <div className="w-full max-w-lg mx-auto relative">
+                        <div className="w-full max-w-xl mx-auto relative">
                             <AnimatePresence mode="popLayout">
                                 {isGenerating && (
                                     <motion.div
@@ -156,7 +149,6 @@ function DashboardContent() {
                             </motion.div>
                         </div>
 
-                        {/* Extracted Image Result UI */}
                         <ImageResult
                             image={generatedImage}
                             isGenerating={isGenerating}
@@ -165,9 +157,9 @@ function DashboardContent() {
                     </div>
                 </main>
 
-                {/* Visual accents */}
-                <div className="fixed top-0 right-10 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
-                <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
+                {/* Ambient Accents */}
+                <div className="fixed top-0 right-10 w-[600px] h-[600px] bg-red-500/5 blur-[120px] rounded-full pointer-events-none" />
+                <div className="fixed bottom-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
             </div>
 
             <style jsx global>{`

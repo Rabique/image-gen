@@ -33,10 +33,10 @@ export function DashboardNavbar() {
   return (
     <>
       <nav className="fixed top-6 left-6 right-6 z-[100] flex items-center justify-between pointer-events-none bg-transparent">
-        {/* Left Logo - Floating Button Style */}
+        {/* Left Logo - Independent Floating Button */}
         <Link href="/" className="pointer-events-auto">
           <div className="flex items-center gap-3 px-4 py-2 rounded-2xl border border-white/10 bg-neutral-900/40 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-white/20 transition-all group">
-            <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center group-hover:rotate-12 transition-transform">
+            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center group-hover:rotate-12 transition-transform shadow-[0_0_15px_rgba(220,38,38,0.4)]">
               <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
                 <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
               </svg>
@@ -45,17 +45,17 @@ export function DashboardNavbar() {
           </div>
         </Link>
 
-        {/* Right User Profile - Floating Button Style with Popover */}
-        <div
+        {/* Right Profile Popover - Independent Floating Button */}
+        <div 
           className="relative pointer-events-auto"
           onMouseEnter={() => setIsPopoverOpen(true)}
           onMouseLeave={() => setIsPopoverOpen(false)}
         >
           <button className="flex items-center gap-2 p-1 pr-4 rounded-2xl border border-white/10 bg-neutral-900/40 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-white/20 transition-all overflow-hidden group">
             {user?.user_metadata.avatar_url ? (
-              <img
-                src={user.user_metadata.avatar_url}
-                alt="Profile"
+              <img 
+                src={user.user_metadata.avatar_url} 
+                alt="Profile" 
                 className="w-10 h-10 rounded-xl object-cover border border-white/10 group-hover:scale-105 transition-transform"
               />
             ) : (
@@ -93,7 +93,7 @@ export function DashboardNavbar() {
                 </div>
 
                 <div className="space-y-1">
-                  <button
+                  <button 
                     onClick={() => {
                       setIsPricingOpen(true);
                       setIsPopoverOpen(false);
@@ -109,10 +109,10 @@ export function DashboardNavbar() {
                   </button>
 
                   {userProfile?.plan !== "FREE" && (
-                    <button
+                    <button 
                       onClick={handleManageSubscription}
                       disabled={isPortalLoading}
-                      className="w-full flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-white/5 text-neutral-400 hover:text-white transition-all group disabled:opacity-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-neutral-400 hover:text-white transition-all group disabled:opacity-50"
                     >
                       <div className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center group-hover:bg-purple-500/20 group-hover:text-purple-400 transition-colors">
                         {isPortalLoading ? (
@@ -120,18 +120,14 @@ export function DashboardNavbar() {
                         ) : (
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                             <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.2" />
                           </svg>
                         )}
                       </div>
-                      <div className="flex flex-col items-start">
-                        <span className="text-xs font-bold leading-tight">Manage</span>
-                        <span className="text-[10px] text-neutral-500 font-medium">Subscription</span>
-                      </div>
+                      <span className="text-sm font-bold">Billing</span>
                     </button>
                   )}
 
-                  <button
+                  <button 
                     onClick={() => signOut()}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 text-neutral-400 hover:text-red-500 transition-all group"
                   >
