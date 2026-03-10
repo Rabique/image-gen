@@ -14,12 +14,14 @@ export async function GET(request: Request) {
     if (!error) {
       const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === "development";
+      
       if (isLocalEnv) {
-        // we can be sure that there is no proxy
         return NextResponse.redirect(`${origin}${next}`);
       } else if (forwardedHost) {
+        // Vercel production
         return NextResponse.redirect(`https://${forwardedHost}${next}`);
       } else {
+        // Fallback
         return NextResponse.redirect(`${origin}${next}`);
       }
     }
