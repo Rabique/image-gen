@@ -6,24 +6,33 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   // if "next" is in search params, use it as the redirection URL
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    
+    // 1. Exchange the code for a session
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    
+    if (!exchangeError) {
+      // 2. Force a session check to ensure cookies are written and available
+      // This helps prevent race conditions where middleware doesn't see the session yet
+      await supabase.auth.getUser();
+
       const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === "development";
       
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
+      // Construct final redirect URL
+      let redirectUrl = `${origin}${next}`;
+      
+      if (!isLocalEnv && forwardedHost) {
         // Vercel production
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      } else {
-        // Fallback
-        return NextResponse.redirect(`${origin}${next}`);
+        redirectUrl = `https://${forwardedHost}${next}`;
       }
+
+      return NextResponse.redirect(redirectUrl);
+    } else {
+      console.error("Auth callback exchange error:", exchangeError);
     }
   }
 

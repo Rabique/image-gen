@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     // Get the user's Polar customer ID and current plan from the database
     const { data: userProfile } = await supabase
       .from("users")
-      .select("polar_customer_id, plan")
+      .select("polar_customer_id, plan, email")
       .eq("id", user.id)
       .single();
 
@@ -43,6 +43,25 @@ export async function POST(req: Request) {
       server: process.env.POLAR_SANDBOX === "true" ? "sandbox" : "production",
     });
 
+    let customerId = userProfile?.polar_customer_id;
+
+    // Search for existing customer in Polar if not in our DB
+    if (!customerId) {
+      try {
+        const customers = await polar.customers.list({
+          email: user.email || userProfile?.email || "",
+        });
+        if (customers.result.items && customers.result.items.length > 0) {
+          customerId = (customers.result.items[0] as any).id;
+          console.log(`Found existing Polar customer during checkout: ${customerId}`);
+          // Update the DB for next time
+          await supabase.from("users").update({ polar_customer_id: customerId }).eq("id", user.id);
+        }
+      } catch (e) {
+        console.error("Error searching for customer during checkout:", e);
+      }
+    }
+
     const url = new URL(req.url);
     const origin = url.origin;
 
@@ -51,7 +70,7 @@ export async function POST(req: Request) {
         products: [productId],
         customerEmail: user.email,
         // If we have a customerId, pass it to avoid duplicate customers
-        customerId: userProfile?.polar_customer_id || undefined,
+        customerId: customerId || undefined,
         metadata: {
           userId: user.id,
           planName: planName,
@@ -65,8 +84,6 @@ export async function POST(req: Request) {
       if (error.name === "AlreadyActiveSubscriptionError" || error.message?.includes("AlreadyActiveSubscriptionError")) {
         console.log("User already has an active subscription. Redirecting to portal strategy.");
         
-        // If they have a customer ID, we can optionally create a portal session here
-        // But for simplicity, we'll return a specific status so the frontend can inform the user
         return NextResponse.json({ 
           error: "ALREADY_SUBSCRIBED", 
           message: "You already have an active subscription. Please manage it through the billing portal." 

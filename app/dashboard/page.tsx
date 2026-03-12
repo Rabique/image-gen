@@ -33,6 +33,7 @@ function DashboardContent() {
     const [isMounted, setIsMounted] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; imageUrl?: string } | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
 
     useEffect(() => {
@@ -70,7 +71,7 @@ function DashboardContent() {
     if (!isMounted || loading) {
         return (
             <div className="h-screen w-full bg-black flex items-center justify-center">
-                <div className="text-white text-xl animate-pulse font-medium tracking-widest uppercase">Loading ViralAI...</div>
+                <div className="text-white text-xl animate-pulse font-medium tracking-widest uppercase">Loading Nail Art...</div>
             </div>
         );
     }
@@ -115,7 +116,7 @@ function DashboardContent() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tighter"
                             >
-                                What are we creating today?
+                                What nail art are we creating today?
                             </motion.h1>
                             <motion.p
                                 initial={{ opacity: 0 }}
@@ -123,7 +124,7 @@ function DashboardContent() {
                                 transition={{ delay: 0.2 }}
                                 className="text-neutral-500 text-sm md:text-base uppercase tracking-[0.3em] font-medium"
                             >
-                                Premium AI Thumbnails in Seconds
+                                Premium AI Nail Art in Seconds
                             </motion.p>
                         </div>
 
@@ -139,12 +140,33 @@ function DashboardContent() {
                                         <UniqueLoading text="Generating magic..." size="md" />
                                     </motion.div>
                                 )}
+                                {error && !isGenerating && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -20, scale: 0.8 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -20, scale: 0.8 }}
+                                        className="mb-12 flex flex-col items-center gap-4"
+                                    >
+                                        <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                                            <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </div>
+                                        <p className="text-red-500 text-sm font-medium text-center max-w-xs">
+                                            {error}
+                                        </p>
+                                    </motion.div>
+                                )}
                             </AnimatePresence>
 
                             <motion.div layout transition={{ type: "spring", stiffness: 300, damping: 30 }}>
                                 <PromptArea
-                                    onImageGenerated={(data, mimeType, imageUrl) => setGeneratedImage({ data, mimeType, imageUrl })}
+                                    onImageGenerated={(data, mimeType, imageUrl) => {
+                                        setGeneratedImage({ data, mimeType, imageUrl });
+                                        setError(null);
+                                    }}
                                     onLoading={setIsGenerating}
+                                    onError={setError}
                                 />
                             </motion.div>
                         </div>

@@ -12,6 +12,8 @@ type UserProfile = {
   plan: string;
   subscription_status: string;
   credits: number;
+  cancel_at_period_end: boolean;
+  ends_at: string | null;
 };
 
 type AuthContextType = {
@@ -39,39 +41,103 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!error && data) {
       setUserProfile(data);
+      return data;
     }
+    return null;
   };
 
   const refreshUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    if (user) {
-      await fetchProfile(user.id);
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser) {
+      setUser(currentUser);
+      await fetchProfile(currentUser.id);
     } else {
+      setUser(null);
       setUserProfile(null);
     }
   };
 
   useEffect(() => {
+    let profileSubscription: any = null;
+
+    // 1. Initial Session Check
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        
+        if (currentUser) {
+          await fetchProfile(currentUser.id);
+          setupRealtimeSubscription(currentUser.id);
+        }
+      } catch (error) {
+        console.error("Initial auth check error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const setupRealtimeSubscription = (userId: string) => {
+      if (profileSubscription) return;
+      
+      profileSubscription = supabase
+        .channel(`public:users:id=eq.${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "users",
+            filter: `id=eq.${userId}`,
+          },
+          (payload) => {
+            console.log("Profile updated in real-time:", payload.new);
+            setUserProfile(payload.new as UserProfile);
+          }
+        )
+        .subscribe();
+    };
+
+    initAuth();
+
+    // Safety timeout to ensure loading screen doesn't get stuck
+    const safetyTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn("Auth initialization taking too long, forcing loading to false");
+        setLoading(false);
+      }
+    }, 3000);
+
+    // 2. Auth State Change Listener
     const {
-      data: { subscription },
+      data: { subscription: authSubscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       
       if (currentUser) {
         await fetchProfile(currentUser.id);
+        setupRealtimeSubscription(currentUser.id);
       } else {
         setUserProfile(null);
+        if (profileSubscription) {
+          supabase.removeChannel(profileSubscription);
+          profileSubscription = null;
+        }
       }
-      
       setLoading(false);
+      clearTimeout(safetyTimeout);
     });
 
     return () => {
-      subscription.unsubscribe();
+      authSubscription.unsubscribe();
+      clearTimeout(safetyTimeout);
+      if (profileSubscription) {
+        supabase.removeChannel(profileSubscription);
+      }
     };
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

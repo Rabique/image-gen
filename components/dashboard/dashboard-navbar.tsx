@@ -67,9 +67,17 @@ export function DashboardNavbar() {
               <span className="text-white text-sm font-semibold truncate max-w-[100px]">
                 {user?.user_metadata.full_name || "Creator"}
               </span>
-              <span className="text-neutral-500 text-[10px] uppercase tracking-wider font-bold">
-                {userProfile?.plan || "FREE"}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-neutral-500 text-[10px] uppercase tracking-wider font-bold">
+                  {userProfile?.plan || "FREE"}
+                </span>
+                {userProfile?.subscription_status === "refunded" && (
+                  <span className="text-[8px] bg-red-500/20 text-red-400 px-1 rounded-sm font-bold uppercase">Refunded</span>
+                )}
+                {userProfile?.cancel_at_period_end && (
+                  <span className="text-[8px] bg-orange-500/20 text-orange-400 px-1 rounded-sm font-bold uppercase">Canceled</span>
+                )}
+              </div>
             </div>
           </button>
 
@@ -85,6 +93,12 @@ export function DashboardNavbar() {
                 <div className="px-4 py-3 border-b border-white/5 mb-1">
                   <p className="text-[10px] items-center uppercase tracking-[0.2em] font-bold text-neutral-500 mb-1">Account</p>
                   <p className="text-xs text-white truncate font-medium">{user?.email}</p>
+                  {userProfile?.ends_at && (
+                    <p className="text-[9px] text-neutral-500 mt-1">
+                      {userProfile.cancel_at_period_end ? "Ends on: " : "Renews on: "}
+                      {new Date(userProfile.ends_at).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
 
                 <div className="px-4 py-3 border-b border-white/5 mb-1 bg-emerald-500/5">
@@ -105,7 +119,7 @@ export function DashboardNavbar() {
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                       </svg>
                     </div>
-                    <span className="text-sm font-bold">Update</span>
+                    <span className="text-sm font-bold">Upgrade</span>
                   </button>
 
                   {userProfile?.plan !== "FREE" && (

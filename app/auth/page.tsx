@@ -26,6 +26,10 @@ export default function AuthPage() {
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        queryParams: {
+          prompt: "select_account", // This forces the account selection screen
+          access_type: "offline",
+        },
       },
     });
   };

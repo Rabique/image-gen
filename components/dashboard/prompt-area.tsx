@@ -8,20 +8,20 @@ import { useAuth } from "@/context/AuthContext";
 interface PromptAreaProps {
   onImageGenerated?: (imageData: string, mimeType: string, imageUrl?: string) => void;
   onLoading?: (isLoading: boolean) => void;
+  onError?: (error: string | null) => void;
 }
 
-export function PromptArea({ onImageGenerated, onLoading }: PromptAreaProps) {
+export function PromptArea({ onImageGenerated, onLoading, onError }: PromptAreaProps) {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { userProfile, refreshUser } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!prompt.trim() || isGenerating) return;
 
     setIsGenerating(true);
-    setError(null);
+    onError?.(null);
     onLoading?.(true);
 
     try {
@@ -45,10 +45,18 @@ export function PromptArea({ onImageGenerated, onLoading }: PromptAreaProps) {
       }
     } catch (err: any) {
       console.error("Generation error:", err);
-      setError(err.message || "An unexpected error occurred");
+      const errorMessage = err.message || "An unexpected error occurred";
+      onError?.(errorMessage);
     } finally {
       setIsGenerating(false);
       onLoading?.(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
     }
   };
 
@@ -68,16 +76,11 @@ export function PromptArea({ onImageGenerated, onLoading }: PromptAreaProps) {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe your video idea..."
+                onKeyDown={handleKeyDown}
+                placeholder="Describe your nail art idea..."
                 disabled={isGenerating}
                 className="w-full h-20 md:h-24 p-6 bg-transparent text-white text-sm md:text-base placeholder:text-neutral-600 focus:outline-none resize-none disabled:opacity-50"
               />
-
-              {error && (
-                <div className="px-8 py-2 text-red-500 text-sm">
-                  Error: {error}
-                </div>
-              )}
 
               <div className="flex items-center justify-between p-4 pt-4 border-t border-white/5">
                 <div className="flex gap-4 px-2">
@@ -130,7 +133,7 @@ export function PromptArea({ onImageGenerated, onLoading }: PromptAreaProps) {
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <span className="text-neutral-500 text-sm font-medium">Suggestions:</span>
-          {["Gaming High-Intensity", "Minimalist Tech Review", "Fitness Transformation"].map((tag) => (
+          {["Soft Pink Floral", "Cyberpunk Chrome", "Minimalist French"].map((tag) => (
             <button
               key={tag}
               onClick={() => setPrompt(tag)}
