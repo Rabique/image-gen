@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PricingModal } from "@/components/ui/pricing-modal";
 
 export function DashboardNavbar() {
-  const { user, userProfile, signOut } = useAuth();
+  const { user, userProfile, profileLoading, signOut } = useAuth();
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
   const [isPricingOpen, setIsPricingOpen] = React.useState(false);
   const [isPortalLoading, setIsPortalLoading] = React.useState(false);
@@ -20,8 +20,15 @@ export function DashboardNavbar() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        console.error("Failed to get portal URL:", data.error);
-        alert("Failed to open billing portal. Please try again later.");
+        const errorMessage = data.error || "Please try again later.";
+        console.error("Portal Error:", errorMessage);
+        
+        if (response.status === 404) {
+          alert("No active subscription found. Please subscribe to a plan first!");
+          setIsPricingOpen(true); // 구독창을 대신 열어줌
+        } else {
+          alert(`Billing portal error: ${errorMessage}`);
+        }
       }
     } catch (error) {
       console.error("Error opening portal:", error);
@@ -69,7 +76,7 @@ export function DashboardNavbar() {
               </span>
               <div className="flex items-center gap-1.5">
                 <span className="text-neutral-500 text-[10px] uppercase tracking-wider font-bold">
-                  {userProfile?.plan || "FREE"}
+                  {profileLoading ? "..." : (userProfile?.plan || "FREE")}
                 </span>
                 {userProfile?.subscription_status === "refunded" && (
                   <span className="text-[8px] bg-red-500/20 text-red-400 px-1 rounded-sm font-bold uppercase">Refunded</span>

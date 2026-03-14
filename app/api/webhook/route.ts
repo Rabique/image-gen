@@ -116,6 +116,7 @@ export async function POST(req: Request) {
         .from("payments")
         .insert({
           user_id: userId,
+          user_email: userProfile?.email || null,
           polar_id: order.id,
           amount_total: amount,
           plan: incomingPlan,
@@ -140,8 +141,36 @@ export async function POST(req: Request) {
       const sub = webhookPayload.data as any;
       const productId = sub.productId || sub.product_id;
       const customerId = sub.customerId || sub.customer_id;
+      
+      console.log(`[DEBUG] Sub event data:`, JSON.stringify({
+        type: webhookPayload.type,
+        status: sub.status,
+        cancel_at_period_end: sub.cancel_at_period_end,
+        customerId,
+        productId
+      }, null, 2));
+
       const metadata = (sub.metadata || {}) as Record<string, string>;
-      const userId = metadata.userId || metadata.user_id;
+      let userId = metadata.userId || metadata.user_id;
+
+      // Fallback: If userId is missing in metadata, find user by polar_customer_id
+      if (!userId && customerId) {
+        console.log(`[DEBUG] No userId in metadata, searching by customerId: ${customerId}`);
+        const { data: userByCustomerId, error: searchError } = await supabase
+          .from("users")
+          .select("id")
+          .eq("polar_customer_id", customerId)
+          .single();
+        
+        if (searchError) console.error(`[DEBUG] Error searching user:`, searchError);
+
+        if (userByCustomerId) {
+          userId = userByCustomerId.id;
+          console.log(`[DEBUG] Found user ${userId} via customerId ${customerId}`);
+        } else {
+          console.log(`[DEBUG] No user found with customerId ${customerId}`);
+        }
+      }
 
       if (userId) {
         const isActive = sub.status === "active" || sub.status === "trialing";
@@ -152,12 +181,12 @@ export async function POST(req: Request) {
           else if (productId === ULTRA_PRODUCT_ID) targetPlan = "ULTRA";
         }
 
-        console.log(`Subscription Event (${webhookPayload.type}) for ${userId}: status=${sub.status}, productId=${productId}, targetPlan=${targetPlan}`);
+        console.log(`[DEBUG] Subscription processing: userId=${userId}, isActive=${isActive}, targetPlan=${targetPlan}`);
 
         // Fetch current user for credit addition check (especially for upgrades)
         const { data: userProfile } = await supabase
           .from("users")
-          .select("plan, credits")
+          .select("plan, credits, subscription_status")
           .eq("id", userId)
           .single();
 
@@ -171,20 +200,37 @@ export async function POST(req: Request) {
           else if (oldPlan === "FREE" && targetPlan === "ULTRA") creditsToAdd = 300;
           else if (oldPlan === "PRO" && targetPlan === "ULTRA") {
             creditsToAdd = 200; // Upgrade difference (300 - 100)
-            console.log(`Detected upgrade from PRO to ULTRA for user ${userId}. Adding ${creditsToAdd} credits.`);
+            console.log(`[DEBUG] Upgrade detected. Credits to add: ${creditsToAdd}`);
           }
         }
 
         if (!isActive && (webhookPayload.type === "subscription.created" || webhookPayload.type === "subscription.updated")) {
-          console.log(`Subscription is ${sub.status}, skipping potential downgrade.`);
+          console.log(`[DEBUG] Subscription is ${sub.status}, skipping update to prevent accidental downgrade.`);
         } else {
+          // Handle both camelCase and snake_case for all fields
+          const isCanceled = sub.cancel_at_period_end === true || sub.cancelAtPeriodEnd === true || sub.cancel_at_period_end === "true";
+          const endsAt = sub.ends_at ?? sub.endsAt;
+          const currentPeriodEnd = sub.current_period_end ?? sub.currentPeriodEnd;
+
+          // Check if this is a resubscription (was canceled, now active/renewed)
+          const isResubscribing = userProfile?.subscription_status === "canceled" && isActive;
+          // Check if this is an uncancel (was set to cancel, now rescinded)
+          const isUncanceling = userProfile?.cancel_at_period_end === true && !isCanceled;
+
+          // 취소된 경우: ends_at은 구독 종료일, 차기 결제일은 없음(null)
+          // 활성 상태인 경우: ends_at은 null(계속됨), 차기 결제일은 currentPeriodEnd
           const subUpdateData: any = {
             plan: targetPlan,
             subscription_status: sub.status,
-            cancel_at_period_end: sub.cancel_at_period_end || sub.cancel_at_period_end === true,
-            ends_at: sub.ends_at || sub.current_period_end || null,
+            cancel_at_period_end: isCanceled,
+            ends_at: isCanceled ? (endsAt || currentPeriodEnd || null) : null,
+            next_billing_at: isCanceled ? null : (currentPeriodEnd || endsAt || null),
             updated_at: new Date().toISOString(),
           };
+
+          console.log(`[DEBUG] Available keys in sub object:`, Object.keys(sub));
+          console.log(`[DEBUG] Mapped fields: isCanceled=${isCanceled}, endsAt=${endsAt}, currentPeriodEnd=${currentPeriodEnd}`);
+          console.log(`[DEBUG] Final subUpdateData sent to Supabase:`, JSON.stringify(subUpdateData, null, 2));
 
           if (creditsToAdd > 0) {
             subUpdateData.credits = (userProfile?.credits || 0) + creditsToAdd;
@@ -200,14 +246,18 @@ export async function POST(req: Request) {
             .eq("id", userId);
 
           if (subUpdateError) {
-            console.error(`Error updating user ${userId} for subscription event:`, subUpdateError);
+            console.error(`[DEBUG] CRITICAL: Supabase update error:`, subUpdateError);
             if (subUpdateError.code === "42703") {
-              console.log("Retrying subscription update without polar_customer_id...");
+              console.log("[DEBUG] Retrying without polar_customer_id...");
               delete subUpdateData.polar_customer_id;
               await supabase.from("users").update(subUpdateData).eq("id", userId);
             }
+          } else {
+            console.log(`[DEBUG] Successfully updated user ${userId} subscription status.`);
           }
         }
+      } else {
+        console.log(`[DEBUG] No userId identified for this subscription event.`);
       }
     }
 

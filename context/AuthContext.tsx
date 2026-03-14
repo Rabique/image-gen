@@ -20,28 +20,46 @@ type AuthContextType = {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  profileLoading: boolean;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Create the client outside to prevent re-creation on every render
+const supabase = createClient();
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    try {
+      setProfileLoading(true);
+      console.log(`[AuthContext] Fetching profile for ${userId}...`);
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-    if (!error && data) {
-      setUserProfile(data);
-      return data;
+      if (error) {
+        console.error(`[AuthContext] Error fetching profile:`, error);
+        return null;
+      }
+
+      if (data) {
+        console.log(`[AuthContext] Profile fetched successfully:`, data.plan);
+        setUserProfile(data);
+        return data;
+      }
+    } catch (err) {
+      console.error("[AuthContext] Unexpected error fetching profile:", err);
+    } finally {
+      setProfileLoading(false);
     }
     return null;
   };
@@ -60,6 +78,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let profileSubscription: any = null;
 
+    const setupRealtimeSubscription = (userId: string) => {
+      if (profileSubscription) {
+        supabase.removeChannel(profileSubscription);
+      }
+      
+      console.log(`[AuthContext] Setting up realtime for user ${userId}`);
+      
+      profileSubscription = supabase
+        .channel(`user-profile-${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*", // Listen to all events (INSERT, UPDATE, etc.)
+            schema: "public",
+            table: "users",
+            filter: `id=eq.${userId}`,
+          },
+          (payload) => {
+            console.log("[AuthContext] Realtime update received:", payload.eventType, payload.new);
+            if (payload.new && Object.keys(payload.new).length > 0) {
+              setUserProfile(payload.new as UserProfile);
+            } else if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
+              // If payload.new is empty (sometimes happens with RLS/Replica Identity), refetch
+              fetchProfile(userId);
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log(`[AuthContext] Realtime status for ${userId}:`, status);
+        });
+    };
+
     // 1. Initial Session Check
     const initAuth = async () => {
       try {
@@ -76,27 +126,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } finally {
         setLoading(false);
       }
-    };
-
-    const setupRealtimeSubscription = (userId: string) => {
-      if (profileSubscription) return;
-      
-      profileSubscription = supabase
-        .channel(`public:users:id=eq.${userId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "users",
-            filter: `id=eq.${userId}`,
-          },
-          (payload) => {
-            console.log("Profile updated in real-time:", payload.new);
-            setUserProfile(payload.new as UserProfile);
-          }
-        )
-        .subscribe();
     };
 
     initAuth();
@@ -147,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signOut, refreshUser }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, profileLoading, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

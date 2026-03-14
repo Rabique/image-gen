@@ -18,9 +18,19 @@ export async function POST(request: Request) {
       .eq("id", user.id)
       .single();
 
+    const accessToken = process.env.POLAR_ACCESS_TOKEN;
+    const isSandbox = process.env.POLAR_SANDBOX === "true";
+
+    if (!accessToken) {
+      console.error("POLAR_ACCESS_TOKEN is missing in environment variables");
+      return NextResponse.json({ error: "Configuration error" }, { status: 500 });
+    }
+
+    console.log(`Initializing Polar SDK (Sandbox: ${isSandbox}, Token Prefix: ${accessToken.substring(0, 10)}...)`);
+
     const polar = new Polar({
-      accessToken: process.env.POLAR_ACCESS_TOKEN ?? "",
-      server: process.env.POLAR_SANDBOX === "true" ? "sandbox" : "production",
+      accessToken: accessToken,
+      server: isSandbox ? "sandbox" : "production",
     });
 
     let customerId = userProfile?.polar_customer_id;
@@ -62,23 +72,25 @@ export async function POST(request: Request) {
 
     const { origin } = new URL(request.url);
 
-    // Create a customer portal session with return_url
-    // Try both common paths for this SDK version
-    const createSession = polar.customerSessions?.create || (polar as any).customerPortal?.sessions?.create;
+    // Create a customer portal session using the standard SDK approach
+    try {
+      // Use customerSessions.create from the SDK
+      const session = await polar.customerSessions.create({
+        customerId: customerId,
+        returnUrl: `${origin}/dashboard`,
+      });
 
-    if (!createSession) {
-      console.error("Could not find customer session creation method in Polar SDK. Available keys:", Object.keys(polar));
-      return NextResponse.json({ error: "Internal SDK error" }, { status: 500 });
+      if (!session || !session.customerPortalUrl) {
+        throw new Error("Portal session or URL missing from response");
+      }
+
+      return NextResponse.json({ url: session.customerPortalUrl });
+    } catch (sdkError) {
+      console.error("Polar SDK Error creating session:", sdkError);
+      return NextResponse.json({ error: "Failed to create Polar session" }, { status: 500 });
     }
-
-    const session = await createSession.call(polar.customerSessions || (polar as any).customerPortal.sessions, {
-      customerId: customerId,
-      returnUrl: `${origin}/dashboard`,
-    });
-
-    return NextResponse.json({ url: session.customerPortalUrl });
   } catch (error) {
-    console.error("Error creating Polar customer portal session:", error);
+    console.error("Critical Error in portal route:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
